@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>巴马组 175 类目全量映射看板</title>
+    <style>
+        :root {
+            --full-color: #059669; /* 绿色 - 全托 */
+            --semi-color: #2563eb; /* 蓝色 - 半托 */
+            --bg-gray: #f1f5f9;
+            --card-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+        }
+
+        body {
+            font-family: -apple-system, system-ui, "Segoe UI", Roboto, sans-serif;
+            background-color: var(--bg-gray);
+            margin: 0;
+            padding: 0;
+            color: #1e293b;
+        }
+
+        header {
+            background: linear-gradient(135deg, #0f172a 0%, #334155 100%);
+            color: white;
+            padding: 30px 5%;
+            text-align: center;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+        }
+
+        .container { width: 95%; max-width: 1800px; margin: 0 auto; padding: 20px 0; }
+
+        /* 筛选区 */
+        .filter-section {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            margin-bottom: 30px;
+            box-shadow: var(--card-shadow);
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: center;
+            position: sticky;
+            top: 10px;
+            z-index: 100;
+        }
+
+        .filter-btn {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .filter-btn:hover { background: #e2e8f0; }
+        .filter-btn.active {
+            background: #2563eb;
+            color: white;
+            border-color: #2563eb;
+            transform: translateY(-2px);
+        }
+
+        .count-badge {
+            background: rgba(0,0,0,0.1);
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 11px;
+        }
+
+        /* 统计栏 */
+        .stats-summary {
+            text-align: center;
+            margin-bottom: 20px;
+            font-size: 14px;
+            color: #64748b;
+        }
+
+        /* 核心网格布局 - 解决一列问题 */
+        .card-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
+            gap: 20px;
+            align-items: start;
+        }
+
+        .card {
+            background: white;
+            border-radius: 12px;
+            padding: 18px;
+            box-shadow: var(--card-shadow);
+            border-left: 5px solid #cbd5e1;
+            transition: transform 0.2s, border-color 0.2s;
+            position: relative;
+        }
+
+        .card:hover {
+            transform: scale(1.02);
+            border-left-color: #334155;
+        }
+
+        .leaf-name-box {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 12px;
+            border-bottom: 1px solid #f1f5f9;
+            padding-bottom: 10px;
+        }
+
+        .leaf-cn { font-size: 18px; font-weight: 800; color: #0f172a; }
+        .leaf-en { font-size: 12px; color: #64748b; font-family: monospace; }
+
+        .path-group { margin-bottom: 12px; }
+        .path-label { font-size: 10px; text-transform: uppercase; color: #94a3b8; letter-spacing: 0.5px; }
+        .path-text-cn { font-size: 13px; color: #334155; line-height: 1.4; margin-top: 2px; display: block; }
+        .path-text-en { font-size: 11px; color: #94a3b8; font-style: italic; display: block; margin-top: 2px; word-break: break-all; }
+
+        .buyer-footer {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .buyer-tag {
+            padding: 6px 10px;
+            border-radius: 6px;
+            font-size: 12px;
+        }
+
+        .tag-full { background: #ecfdf5; color: var(--full-color); border: 1px solid #a7f3d0; }
+        .tag-semi { background: #eff6ff; color: var(--semi-color); border: 1px solid #bfdbfe; }
+
+        .role-title { font-weight: 800; margin-right: 4px; font-size: 11px; }
+
+        /* 响应式调整 */
+        @media (max-width: 768px) {
+            .card-grid { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+
+<header>
+    <h1>巴马组·全托/半托类目全景看板</h1>
+    <p>全量覆盖 175 个叶子类目 · 映射关系公示</p>
+</header>
+
+<div class="container">
+    <div class="filter-section" id="filterNav">
+        <button class="filter-btn active" onclick="filterBy('all', this)">全部显示 <span class="count-badge">175</span></button>
+    </div>
+
+    <div class="stats-summary" id="statsInfo">正在计算统计数据...</div>
+
+    <div class="card-grid" id="grid">
+        </div>
+</div>
+
+<script>
+    // 175条全量数据加载逻辑
+    const rawData = `Baby Nests	婴儿睡袋	家居、厨房用品>儿童家居用品>婴儿用家具>婴幼儿睡床>婴儿睡袋	Home & Kitchen>Kids' Home Store>Nursery Furniture>Infant & Toddler Beds>Baby Nests	龙紫妮	富贵星	jenny.luo	bertha.liu
+Other (Pad Liners)	其他（替换垫衬）	家居、厨房用品>儿童家居用品>婴儿用家具>婴儿护理台>隔尿床垫和垫套>替换垫衬>其他（替换垫衬）	Home & Kitchen>Kids' Home Store>Nursery Furniture>Changing & Dressing>Changing Table Pads & Covers>Pad Liners>Other (Pad Liners)	陆祁音	富贵星	vanessa.liu	bertha.liu
+Reusable Pad Liners	重复使用替换垫衬	家居、厨房用品>儿童家居用品>婴儿用家具>婴儿护理台>隔尿床垫和垫套>替换垫衬>重复使用替换垫衬	Home & Kitchen>Kids' Home Store>Nursery Furniture>Changing & Dressing>Changing Table Pads & Covers>Pad Liners>Reusable Pad Liners	陆祁音	富贵星	vanessa.liu	bertha.liu
+Moses Baskets	婴儿睡篮、提篮	家居、厨房用品>儿童家居用品>婴儿用家具>婴幼儿睡床>摇篮床垫>婴儿睡篮、提篮	Home & Kitchen>Kids' Home Store>Nursery Furniture>Infant & Toddler Beds>Bassinets>Moses Baskets	陆祁音	富贵星	vanessa.liu	bertha.liu
+Other (Bassinets)	其他（摇篮床垫）	家居、厨房用品>儿童家居用品>婴儿用家具>婴幼儿睡床>摇篮床垫>其他（摇篮床垫）	Home & Kitchen>Kids' Home Store>Nursery Furniture>Infant & Toddler Beds>Bassinets>Other (Bassinets)	陆祁音	富贵星	vanessa.liu	bertha.liu
+Caddies	尿布尿布盒	家居、厨房用品>儿童家居用品>婴儿用家具>婴儿护理台>尿布袋和尿布盒>尿布尿布盒	Home & Kitchen>Kids' Home Store>Nursery Furniture>Changing & Dressing>Diaper Stackers & Caddies>Caddies	龙紫妮	富贵星	jenny.luo	bertha.liu
+Nap Mats	幼儿午睡垫	家居、厨房用品>儿童家居用品>婴儿用家具>婴幼儿睡床>便携床>幼儿午睡垫	Home & Kitchen>Kids' Home Store>Nursery Furniture>Infant & Toddler Beds>Travel Beds>Nap Mats	龙紫妮	富贵星	jenny.luo	bertha.liu
+Bedside Cribs	婴儿床床边	家居、厨房用品>儿童家居用品>婴儿用家具>婴幼儿睡床>摇篮床垫>婴儿床床边	Home & Kitchen>Kids' Home Store>Nursery Furniture>Infant & Toddler Beds>Bassinets>Bedside Cribs	陆祁音	富贵星	vanessa.liu	bertha.liu
+Glider & Ottoman Sets	育儿摇椅和脚凳	家居、厨房用品>儿童家居用品>婴儿用家具>哺乳椅>育儿摇椅和脚凳	Home & Kitchen>Kids' Home Store>Nursery Furniture>Gliders, Ottomans & Rocking Chairs>Glider & Ottoman Sets	龙紫妮	富贵星	jenny.luo	bertha.liu
+Cribs	婴儿床	家居、厨房用品>儿童家居用品>婴儿用家具>婴幼儿睡床>婴儿床	Home & Kitchen>Kids' Home Store>Nursery Furniture>Infant & Toddler Beds>Cribs	陆祁音	富贵星	vanessa.liu	bertha.liu
+Other (Storage & Organization)	其他（婴幼儿收纳、储物）	家居、厨房用品>儿童家居用品>婴儿用家具>婴幼儿收纳、储物>其他（婴幼儿收纳、储物）	Home & Kitchen>Kids' Home Store>Nursery Furniture>Storage & Organization>Other (Storage & Organization)	龙紫妮	富贵星	jenny.luo	bertha.liu
+Storage Bins & Boxes	婴幼儿收纳箱	家居、厨房用品>儿童家居用品>婴儿用家具>婴幼儿收纳、储物>婴幼儿收纳箱	Home & Kitchen>Kids' Home Store>Nursery Furniture>Storage & Organization>Storage Bins & Boxes	龙紫妮	富贵星	jenny.luo	bertha.liu
+Toy Chests & Organizers	玩具箱和收纳	家居、厨房用品>儿童家居用品>婴儿用家具>婴幼儿收纳、储物>玩具箱和收纳	Home & Kitchen>Kids' Home Store>Nursery Furniture>Storage & Organization>Toy Chests & Organizers	床头猫	富贵星	Johnny.Yang	bertha.liu
+Hampers	婴儿洗衣篮	家居、厨房用品>儿童家居用品>婴儿用家具>婴儿护理台>礼品篮	Home & Kitchen>Kids' Home Store>Nursery Furniture>Changing & Dressing>Hampers	陆祁音	富贵星	vanessa.liu	bertha.liu
+Changing Tables	尿布台	家居、厨房用品>儿童家居用品>婴儿用家具>婴儿护理台>尿布台	Home & Kitchen>Kids' Home Store>Nursery Furniture>Changing & Dressing>Changing Tables	龙紫妮	富贵星	jenny.luo	bertha.liu
+Shelves	婴幼儿书架	家居、厨房用品>儿童家居用品>婴儿用家具>婴幼儿收纳、储物>婴幼儿书架	Home & Kitchen>Kids' Home Store>Nursery Furniture>Storage & Organization>Shelves	龙紫妮	富贵星	jenny.luo	bertha.liu
+Gliders	摆动式沙发椅	家居、厨房用品>儿童家居用品>婴儿用家具>哺乳椅>摆动式沙发椅	Home & Kitchen>Kids' Home Store>Nursery Furniture>Gliders, Ottomans & Rocking Chairs>Gliders	龙紫妮	富贵星	jenny.luo	bertha.liu
+Baskets & Liners	篮子和衬垫	家居、厨房用品>儿童家居用品>婴儿用家具>婴幼儿收纳、储物>篮子和衬垫	Home & Kitchen>Kids' Home Store>Nursery Furniture>Storage & Organization>Baskets & Liners	陆祁音	富贵星	vanessa.liu	bertha.liu
+Hanging Organizers	育儿收纳挂架	家居、厨房用品>儿童家居用品>婴儿用家具>婴幼儿收纳、储物>育儿收纳挂架	Home & Kitchen>Kids' Home Store>Nursery Furniture>Storage & Organization>Hanging Organizers	陆祁音	富贵星	vanessa.liu	bertha.liu
+Hampers	婴幼儿收纳篮	家居、厨房用品>儿童家居用品>婴儿用家具>婴幼儿收纳、储物>婴幼儿收纳篮	Home & Kitchen>Kids' Home Store>Nursery Furniture>Storage & Organization>Hampers	陆祁音	富贵星	vanessa.liu	bertha.liu
+Toddler Beds	儿童床	家居、厨房用品>儿童家居用品>婴儿用家具>婴幼儿睡床>儿童床	Home & Kitchen>Kids' Home Store>Nursery Furniture>Infant & Toddler Beds>Toddler Beds	龙紫妮	富贵星	jenny.luo	bertha.liu
+Chests & Dressers	五斗柜、衣柜	家居、厨房用品>儿童家居用品>婴儿用家具>婴儿护理台>五斗柜、衣柜	Home & Kitchen>Kids' Home Store>Nursery Furniture>Changing & Dressing>Chests & Dressers	龙紫妮	富贵星	jenny.luo	bertha.liu
+Cradles	摇篮	家居、厨房用品>儿童家居用品>婴儿用家具>婴幼儿睡床>摇篮	Home & Kitchen>Kids' Home Store>Nursery Furniture>Infant & Toddler Beds>Cradles	陆祁音	富贵星	vanessa.liu	bertha.liu
+Other (Infant & Toddler Beds)	其他（婴幼儿睡床）	家居、厨房用品>儿童家居用品>婴儿用家具>婴幼儿睡床>其他（婴幼儿睡床）	Home & Kitchen>Kids' Home Store>Nursery Furniture>Infant & Toddler Beds>Other (Infant & Toddler Beds)	龙紫妮	富贵星	jenny.luo	bertha.liu
+Armoires	婴幼儿衣柜	家居、厨房用品>儿童家居用品>婴儿用家具>婴儿护理台>婴幼儿衣柜	Home & Kitchen>Kids' Home Store>Nursery Furniture>Changing & Dressing>Armoires	龙紫妮	富贵星	jenny.luo	bertha.liu
+Rails & Rail Guards	护栏和防护装置	家居、厨房用品>儿童家居用品>婴儿用家具>护栏和防护装置	Home & Kitchen>Kids' Home Store>Nursery Furniture>Rails & Rail Guards	陆祁音	富贵星	vanessa.liu	bertha.liu
+Furniture Collections	婴幼儿家具套装	家居、厨房用品>儿童家居用品>婴儿用家具>婴幼儿家具套装	Home & Kitchen>Kids' Home Store>Nursery Furniture>Furniture Collections	陆祁音	富贵星	vanessa.liu	bertha.liu
+Convertible Cribs	可转换婴儿床	家居、厨房用品>儿童家居用品>婴儿用家具>婴幼儿睡床>可转换婴儿床	Home & Kitchen>Kids' Home Store>Nursery Furniture>Infant & Toddler Beds>Convertible Cribs	龙紫妮	富贵星	jenny.luo	bertha.liu
+Other (Nursery Furniture)	其他（婴儿用家具）	家居、厨房用品>儿童家居用品>婴儿用家具>其他（婴儿用家具）	Home & Kitchen>Kids' Home Store>Nursery Furniture>Other (Nursery Furniture)	陆祁音	富贵星	vanessa.liu	bertha.liu
+Playards	婴幼儿游戏床	家居、厨房用品>儿童家居用品>婴儿用家具>婴幼儿游戏床	Home & Kitchen>Kids' Home Store>Nursery Furniture>Playards	陆祁音	富贵星	vanessa.liu	bertha.liu
+Step Stools	婴幼儿脚踏凳	家居、厨房用品>儿童家居用品>婴儿用家具>婴幼儿收纳、储物>婴幼儿脚踏凳	Home & Kitchen>Kids' Home Store>Nursery Furniture>Storage & Organization>Step Stools	龙紫妮	富贵星	jenny.luo	bertha.liu
+Rocking Chairs	育儿摇椅	家居、厨房用品>儿童家居用品>婴儿用家具>哺乳椅>育儿摇椅	Home & Kitchen>Kids' Home Store>Nursery Furniture>Gliders, Ottomans & Rocking Chairs>Rocking Chairs	龙紫妮	富贵星	jenny.luo	bertha.liu
+Ottomans	育儿软垫凳	家居、厨房用品>儿童家居用品>婴儿用家具>哺乳椅>育儿软垫凳	Home & Kitchen>Kids' Home Store>Nursery Furniture>Gliders, Ottomans & Rocking Chairs>Ottomans	龙紫妮	富贵星	jenny.luo	bertha.liu
+Infant & Toddler Travel Beds	婴幼儿便携床	家居、厨房用品>儿童家居用品>婴儿用家具>婴幼儿睡床>便携床>婴幼儿便携床	Home & Kitchen>Kids' Home Store>Nursery Furniture>Infant & Toddler Beds>Travel Beds>Infant & Toddler Travel Beds	龙紫妮	富贵星	jenny.luo	bertha.liu
+Stackers	尿不湿收纳	家居、厨房用品>儿童家居用品>婴儿用家具>婴儿护理台>尿布袋和尿布盒>尿不湿收纳	Home & Kitchen>Kids' Home Store>Nursery Furniture>Changing & Dressing>Diaper Stackers & Caddies>Stackers	龙紫妮	富贵星	jenny.luo	bertha.liu
+Disposable Pad Liners	一次性替换垫衬	家居、厨房用品>儿童家居用品>婴儿用家具>婴儿护理台>隔尿床垫和垫套>替换垫衬>一次性替换垫衬	Home & Kitchen>Kids' Home Store>Nursery Furniture>Changing & Dressing>Changing Table Pads & Covers>Pad Liners>Disposable Pad Liners	陆祁音	富贵星	vanessa.liu	bertha.liu
+Kids' Baking Supplies	儿童烘培用品	家居、厨房用品>儿童家居用品>儿童烘培用品	Home & Kitchen>Kids' Home Store>Kids' Baking Supplies	陆祁音	富贵星	vanessa.liu	bertha.liu
+Pillowcases	幼儿枕套	家居、厨房用品>儿童家居用品>婴儿床上用品>儿童床上用品>儿童床单和枕套>幼儿枕套	Home & Kitchen>Kids' Home Store>Nursery Bedding>Toddler Bedding>Sheets, Pillowcases & Sets>Pillowcases	床头猫	振哲	Johnny.Yang	ethan.zuo
+Sheet & Pillowcase Sets	床单和枕套套装	家居、厨房用品>儿童家居用品>婴儿床上用品>儿童床上用品>儿童床单和枕套>床单和枕套套装	Home & Kitchen>Kids' Home Store>Nursery Bedding>Toddler Bedding>Sheets, Pillowcases & Sets>Sheet & Pillowcase Sets	床头猫	振哲	Johnny.Yang	ethan.zuo
+Bed Sheets	床单	家居、厨房用品>儿童家居用品>婴儿床上用品>儿童床上用品>儿童床单和枕套>床单	Home & Kitchen>Kids' Home Store>Nursery Bedding>Toddler Bedding>Sheets, Pillowcases & Sets>Bed Sheets	床头猫	振哲	Johnny.Yang	ethan.zuo
+Duvet Cover Sets	幼儿被套套装	家居、厨房用品>儿童家居用品>婴儿床上用品>儿童床上用品>儿童羽绒被、被套和套装>幼儿被套套装	Home & Kitchen>Kids' Home Store>Nursery Bedding>Toddler Bedding>Duvets, Covers & Sets>Duvet Cover Sets	床头猫	振哲	Johnny.Yang	ethan.zuo
+Bed Rail Covers	婴幼儿床护栏织物罩	家居、厨房用品>儿童家居用品>婴儿床上用品>儿童床上用品>幼儿床上用品套件>婴幼儿床护栏织物罩	Home & Kitchen>Kids' Home Store>Nursery Bedding>Toddler Bedding>Bedding Accessories>Bed Rail Covers	床头猫	振哲	Johnny.Yang	ethan.zuo
+Back & Body Supports	婴儿靠枕、身体靠枕	家居、厨房用品>儿童家居用品>婴儿床上用品>婴儿寝具>婴儿靠枕、身体靠枕	Home & Kitchen>Kids' Home Store>Nursery Bedding>Baby Bedding>Back & Body Supports	床头猫	振哲	Johnny.Yang	ethan.zuo
+Swaddling Blankets	婴儿包巾、包被	家居、厨房用品>儿童家居用品>婴儿床上用品>婴儿毯子>婴儿包巾、包被	Home & Kitchen>Kids' Home Store>Nursery Bedding>Blankets & Swaddling>Swaddling Blankets	床头猫	振哲	Johnny.Yang	ethan.zuo
+Quilts	婴儿被子	家居、厨房用品>儿童家居用品>婴儿床上用品>婴儿毯子>婴儿被子	Home & Kitchen>Kids' Home Store>Nursery Bedding>Blankets & Swaddling>Quilts	床头猫	振哲	Johnny.Yang	ethan.zuo
+Cradle Mattresses	摇篮床床垫	家居、厨房用品>儿童家居用品>婴儿床上用品>婴幼儿床垫>摇篮床床垫	Home & Kitchen>Kids' Home Store>Nursery Bedding>Mattresses>Cradle Mattresses	床头猫	振哲	Johnny.Yang	ethan.zuo
+Bed Blankets	婴儿毯	家居、厨房用品>儿童家居用品>婴儿床上用品>婴儿毯子>婴儿毯	Home & Kitchen>Kids' Home Store>Nursery Bedding>Blankets & Swaddling>Bed Blankets	床头猫	振哲	Johnny.Yang	ethan.zuo
+Crib Bed Skirts	婴幼儿床床裙	家居、厨房用品>儿童家居用品>婴儿床上用品>婴儿寝具>婴儿床裙>婴幼儿床床裙	Home & Kitchen>Kids' Home Store>Nursery Bedding>Baby Bedding>Bed Skirts>Crib Bed Skirts	床头猫	振哲	Johnny.Yang	ethan.zuo
+Gauze-Kets	婴儿纱布毯	家居、厨房用品>儿童家居用品>婴儿床上用品>婴儿毯子>婴儿纱布毯	Home & Kitchen>Kids' Home Store>Nursery Bedding>Blankets & Swaddling>Gauze-Kets	床头猫	振哲	Johnny.Yang	ethan.zuo
+Sleeping Bags	婴儿睡袋	家居、厨房用品>儿童家居用品>婴儿床上用品>婴儿睡袋	Home & Kitchen>Kids' Home Store>Nursery Bedding>Sleeping Bags	床头猫	振哲	Johnny.Yang	ethan.zuo
+Other (Blankets & Swaddling)	其他（婴儿毯子）	家居、厨房用品>儿童家居用品>婴儿床上用品>婴儿毯子>其他（婴儿毯子）	Home & Kitchen>Kids' Home Store>Nursery Bedding>Blankets & Swaddling>Other (Blankets & Swaddling)	床头猫	振哲	Johnny.Yang	ethan.zuo
+Playard Bedding	游戏床床上用品	家居、厨房用品>儿童家居用品>婴儿床上用品>游戏床床上用品	Home & Kitchen>Kids' Home Store>Nursery Bedding>Playard Bedding	床头猫	振哲	Johnny.Yang	ethan.zuo
+Bed Bumpers	婴幼儿床保险杠	家居、厨房用品>儿童家居用品>婴儿床上用品>儿童床上用品>幼儿床上用品套件>婴幼儿床保险杠	Home & Kitchen>Kids' Home Store>Nursery Bedding>Toddler Bedding>Bedding Accessories>Bed Bumpers	床头猫	振哲	Johnny.Yang	ethan.zuo
+Ornament Hooks	装饰挂钩	家居、厨房用品>节日装饰品>装饰挂钩	Home & Kitchen>Seasonal Décor>Ornament Hooks	床头猫	振哲	Johnny.Yang	ethan.zuo
+Bassinets Bed Skirts	摇篮车床裙	家居、厨房用品>儿童家居用品>婴儿床上用品>婴儿寝具>婴儿床裙>摇篮车床裙	Home & Kitchen>Kids' Home Store>Nursery Bedding>Baby Bedding>Bed Skirts>Bassinets Bed Skirts	床头猫	振哲	Johnny.Yang	ethan.zuo
+Cradle Bed Skirts	摇篮床床裙	家居、厨房用品>儿童家居用品>婴儿床上用品>婴儿寝具>婴儿床裙>摇篮床床裙	Home & Kitchen>Kids' Home Store>Nursery Bedding>Baby Bedding>Bed Skirts>Cradle Bed Skirts	床头猫	振哲	Johnny.Yang	ethan.zuo
+Bassinet Bumpers	摇篮车床围	家居、厨房用品>儿童家居用品>婴儿床上用品>婴儿寝具>婴儿床上用品套件>摇篮车床围	Home & Kitchen>Kids' Home Store>Nursery Bedding>Baby Bedding>Bedding Accessories>Bassinet Bumpers	床头猫	振哲	Johnny.Yang	ethan.zuo
+Mosquito Protection	婴幼儿蚊帐	家居、厨房用品>儿童家居用品>婴儿床上用品>婴儿寝具>婴儿床上用品套件>婴幼儿蚊帐	Home & Kitchen>Kids' Home Store>Nursery Bedding>Baby Bedding>Bedding Accessories>Mosquito Protection	柏多望	振哲	rico.lin	ethan.zuo
+Duvets	儿童羽绒被	家居、厨房用品>儿童家居用品>婴儿床上用品>儿童床上用品>儿童羽绒被、被套和套装>儿童羽绒被	Home & Kitchen>Kids' Home Store>Nursery Bedding>Toddler Bedding>Duvets, Covers & Sets>Duvets	床头猫	振哲	Johnny.Yang	ethan.zuo
+Crib Bumpers	婴儿床床围	家居、厨房用品>儿童家居用品>婴儿床上用品>婴儿寝具>婴儿床上用品套件>婴儿床床围	Home & Kitchen>Kids' Home Store>Nursery Bedding>Baby Bedding>Bedding Accessories>Crib Bumpers	床头猫	振哲	Johnny.Yang	ethan.zuo
+Bed Rails & Rail Guards	婴幼儿床围栏	家居、厨房用品>儿童家居用品>婴儿床上用品>儿童床上用品>幼儿床上用品套件>婴幼儿床围栏	Home & Kitchen>Kids' Home Store>Nursery Bedding>Toddler Bedding>Bedding Accessories>Bed Rails & Rail Guards	柏多望	振哲	rico.lin	ethan.zuo
+Crib Bedding Sets	婴幼儿床床品套装	家居、厨房用品>儿童家居用品>婴儿床上用品>婴儿寝具>婴儿寝具套装>婴幼儿床床品套装	Home & Kitchen>Kids' Home Store>Nursery Bedding>Baby Bedding>Bedding Sets>Crib Bedding Sets	柏多望	振哲	rico.lin	ethan.zuo
+Bassinet Sheets	摇篮车床单	家居、厨房用品>儿童家居用品>婴儿床上用品>婴儿寝具>婴儿床单>摇篮车床单	Home & Kitchen>Kids' Home Store>Nursery Bedding>Baby Bedding>Sheets>Bassinet Sheets	床头猫	振哲	Johnny.Yang	ethan.zuo
+Bassinet Bedding Sets	摇篮床品套装	家居、厨房用品>儿童家居用品>婴儿床上用品>婴儿寝具>婴儿寝具套装>摇篮床品套装	Home & Kitchen>Kids' Home Store>Nursery Bedding>Baby Bedding>Bedding Sets>Bassinet Bedding Sets	床头猫	振哲	Johnny.Yang	ethan.zuo
+Crib Sheets	婴幼儿床床单	家居、厨房用品>儿童家居用品>婴儿床上用品>婴儿寝具>婴儿床单>婴幼儿床床单	Home & Kitchen>Kids' Home Store>Nursery Bedding>Baby Bedding>Sheets>Crib Sheets	柏多望	振哲	rico.lin	ethan.zuo
+Cradle Sheets	摇篮床床单	家居、厨房用品>儿童家居用品>婴儿床上用品>婴儿寝具>婴儿床单>摇篮床床单	Home & Kitchen>Kids' Home Store>Nursery Bedding>Baby Bedding>Sheets>Cradle Sheets	柏多望	振哲	rico.lin	ethan.zuo
+Crib Mattresses	婴幼儿床床垫	家居、厨房用品>儿童家居用品>婴儿床上用品>婴幼儿床垫>婴幼儿床床垫	Home & Kitchen>Kids' Home Store>Nursery Bedding>Mattresses>Crib Mattresses	床头猫	振哲	Johnny.Yang	ethan.zuo
+Receiving Blankets	婴儿抱毯	家居、厨房用品>儿童家居用品>婴儿床上用品>婴儿毯子>婴儿抱毯	Home & Kitchen>Kids' Home Store>Nursery Bedding>Blankets & Swaddling>Receiving Blankets	柏多望	振哲	rico.lin	ethan.zuo
+Bed Skirts	幼儿床裙	家居、厨房用品>儿童家居用品>婴儿床上用品>儿童床上用品>幼儿床裙	Home & Kitchen>Kids' Home Store>Nursery Bedding>Toddler Bedding>Bed Skirts	柏多望	振哲	rico.lin	ethan.zuo
+Other (Mattresses)	其他（婴幼儿床垫）	家居、厨房用品>儿童家居用品>婴儿床上用品>婴幼儿床垫>其他（婴幼儿床垫）	Home & Kitchen>Kids' Home Store>Nursery Bedding>Mattresses>Other (Mattresses)	柏多望	振哲	rico.lin	ethan.zuo
+Duvet Covers	儿童被罩	家居、厨房用品>儿童家居用品>婴儿床上用品>儿童床上用品>儿童羽绒被、被套和套装>儿童被罩	Home & Kitchen>Kids' Home Store>Nursery Bedding>Toddler Bedding>Duvets, Covers & Sets>Duvet Covers	柏多望	振哲	rico.lin	ethan.zuo
+Wearable Blankets	婴儿可穿毛毯	家居、厨房用品>儿童家居用品>婴儿床上用品>婴儿毯子>婴儿可穿毛毯	Home & Kitchen>Kids' Home Store>Nursery Bedding>Blankets & Swaddling>Wearable Blankets	柏多望	振哲	rico.lin	ethan.zuo
+Throws	婴儿多功能毯子、披巾	家居、厨房用品>儿童家居用品>婴儿床上用品>婴儿毯子>婴儿多功能毯子、披巾	Home & Kitchen>Kids' Home Store>Nursery Bedding>Blankets & Swaddling>Throws	柏多望	振哲	rico.lin	ethan.zuo
+Portable Crib Mattresses	游乐设施垫	家居、厨房用品>儿童家居用品>婴儿床上用品>婴幼儿床垫>游乐设施垫	Home & Kitchen>Kids' Home Store>Nursery Bedding>Mattresses>Portable Crib Mattresses	柏多望	振哲	rico.lin	ethan.zuo
+Head Shaping Pillows	婴儿塑型枕	家居、厨房用品>儿童家居用品>婴儿床上用品>婴儿寝具>婴儿塑型枕	Home & Kitchen>Kids' Home Store>Nursery Bedding>Baby Bedding>Head Shaping Pillows	柏多望	振哲	rico.lin	ethan.zuo
+Bassinet & Cradle Mattress Protection	摇篮床床笠	家居、厨房用品>儿童家居用品>婴儿床上用品>隔尿垫>摇篮床床笠	Home & Kitchen>Kids' Home Store>Nursery Bedding>Mattress Protection>Bassinet & Cradle Mattress Protection	柏多望	振哲	rico.lin	ethan.zuo
+Cradle Bedding Sets	摇篮床上用品套装	家居、厨房用品>儿童家居用品>婴儿床上用品>婴儿寝具>婴儿寝具套装>摇篮床上用品套装	Home & Kitchen>Kids' Home Store>Nursery Bedding>Baby Bedding>Bedding Sets>Cradle Bedding Sets	柏多望	振哲	rico.lin	ethan.zuo
+Towel-Kets	婴儿毛巾毯	家居、厨房用品>儿童家居用品>婴儿床上用品>婴儿毯子>婴儿毛巾毯	Home & Kitchen>Kids' Home Store>Nursery Bedding>Blankets & Swaddling>Towel-Kets	柏多望	振哲	rico.lin	ethan.zuo
+Bedding Sets	儿童床品套装	家居、厨房用品>儿童家居用品>婴儿床上用品>儿童床上用品>儿童床品套装	Home & Kitchen>Kids' Home Store>Nursery Bedding>Toddler Bedding>Bedding Sets	柏多望	振哲	rico.lin	ethan.zuo
+Mattress Pads	幼儿床垫	家居、厨房用品>儿童家居用品>婴儿床上用品>隔尿垫>幼儿床垫	Home & Kitchen>Kids' Home Store>Nursery Bedding>Mattress Protection>Mattress Pads	柏多望	振哲	rico.lin	ethan.zuo
+Other (Nursery Bedding)	其他（婴儿床上用品）	家居、厨房用品>儿童家居用品>婴儿床上用品>其他（婴儿床上用品）	Home & Kitchen>Kids' Home Store>Nursery Bedding>Other (Nursery Bedding)	柏多望	振哲	rico.lin	ethan.zuo
+Pillows	儿童枕头	家居、厨房用品>儿童家居用品>婴儿床上用品>儿童床上用品>儿童枕头	Home & Kitchen>Kids' Home Store>Nursery Bedding>Toddler Bedding>Pillows	柏多望	振哲	rico.lin	ethan.zuo
+Crib Mattress Protection	婴幼儿床床笠	家居、厨房用品>儿童家居用品>婴儿床上用品>隔尿垫>婴幼儿床床笠	Home & Kitchen>Kids' Home Store>Nursery Bedding>Mattress Protection>Crib Mattress Protection	柏多望	振哲	rico.lin	ethan.zuo
+Other (Toddler Bedding)	其他（儿童床上用品）	家居、厨房用品>儿童家居用品>婴儿床上用品>儿童床上用品>其他（儿童床上用品）	Home & Kitchen>Kids' Home Store>Nursery Bedding>Toddler Bedding>Other (Toddler Bedding)	柏多望	振哲	rico.lin	ethan.zuo
+Rail Covers	婴儿床围栏盖	家居、厨房用品>儿童家居用品>婴儿床上用品>婴儿寝具>婴儿床上用品套件>婴儿床围栏盖	Home & Kitchen>Kids' Home Store>Nursery Bedding>Baby Bedding>Bedding Accessories>Rail Covers	柏多望	振哲	rico.lin	ethan.zuo
+Canopies	婴幼儿床幔	家居、厨房用品>儿童家居用品>婴儿床上用品>婴儿寝具>婴儿床上用品套件>婴幼儿床幔	Home & Kitchen>Kids' Home Store>Nursery Bedding>Baby Bedding>Bedding Accessories>Canopies	柏多望	振哲	rico.lin	ethan.zuo
+Figurines	耶稣诞生雕像摆件	家居、厨房用品>节日装饰品>耶稣诞生雕像摆件>耶稣诞生雕像摆件	Home & Kitchen>Seasonal Décor>Nativity>Figurines	柏多望	富贵星	rico.lin	bertha.liu
+Tabletop Scenes	耶稣桌面场景装饰	家居、厨房用品>节日装饰品>耶稣诞生雕像摆件>耶稣桌面场景装饰	Home & Kitchen>Seasonal Décor>Nativity>Tabletop Scenes	床头猫	富贵星	Johnny.Yang	bertha.liu
+Wall décor	墙饰	家居、厨房用品>节日装饰品>墙饰	Home & Kitchen>Seasonal Décor>Wall décor	栀越桃	振哲	sumi.wang	ethan.zuo
+Other (Event & Party Supplies)	其他（活动和派对用品）	家居、厨房用品>活动和派对用品>其他（活动和派对用品）	Home & Kitchen>Event & Party Supplies>Other (Event & Party Supplies)	巴马	巴马	mars.zhou	#N/A
+Tote Bag Packs	派对手提礼品包	家居、厨房用品>活动和派对用品>派对小礼品>派对礼品盒和礼品袋>派对手提礼品包	Home & Kitchen>Event & Party Supplies>Favors>Boxes & Bags>Tote Bag Packs	本子初	焦伯符	tia.he	arthur.jiao
+Other (Jewelry Packs)	其他（派对珠宝首饰礼品包）	家居、厨房用品>活动和派对用品>派对小礼品>派对珠宝首饰礼品包>其他（派对珠宝首饰礼品包）	Home & Kitchen>Event & Party Supplies>Favors>Jewelry Packs>Other (Jewelry Packs)	巴马	巴马	mars.zhou	#N/A
+Ring Packs	戒指派对礼品包	家居、厨房用品>活动和派对用品>派对小礼品>派对珠宝首饰礼品包>戒指派对礼品包	Home & Kitchen>Event & Party Supplies>Favors>Jewelry Packs>Ring Packs	床头猫	富贵星	Johnny.Yang	bertha.liu
+Box Packs	派对礼品盒包装	家居、厨房用品>活动和派对用品>派对小礼品>派对礼品盒和礼品袋>派对礼品盒包装	Home & Kitchen>Event & Party Supplies>Favors>Boxes & Bags>Box Packs	陆祁音	焦伯符	vanessa.liu	arthur.jiao
+Bracelet Packs	手镯派对礼品包	家居、厨房用品>活动和派对用品>派对小礼品>派对珠宝首饰礼品包>手镯派对礼品包	Home & Kitchen>Event & Party Supplies>Favors>Jewelry Packs>Bracelet Packs	柏多望	富贵星	rico.lin	bertha.liu
+Other (Boxes & Bags)	其他（派对礼品盒和礼品袋）	家居、厨房用品>活动和派对用品>派对小礼品>派对礼品盒和礼品袋>其他（派对礼品盒和礼品袋）	Home & Kitchen>Event & Party Supplies>Favors>Boxes & Bags>Other (Boxes & Bags)	巴马	巴马	mars.zhou	#N/A
+Multi-Item Party Favor Packs	多物品派对礼品包	家居、厨房用品>活动和派对用品>派对小礼品>多物品派对礼品包	Home & Kitchen>Event & Party Supplies>Favors>Multi-Item Party Favor Packs	羊禾云	焦伯符	zoella.zhang	arthur.jiao
+Candy Bottles	派对糖果瓶礼品包	家居、厨房用品>活动和派对用品>派对小礼品>派对糖果瓶礼品包	Home & Kitchen>Event & Party Supplies>Favors>Candy Bottles	床头猫	富贵星	Johnny.Yang	bertha.liu
+Keyring Packs	派对钥匙圈礼品包	家居、厨房用品>活动和派对用品>派对小礼品>派对钥匙圈礼品包	Home & Kitchen>Event & Party Supplies>Favors>Keyring Packs	龙紫妮	富贵星	jenny.luo	bertha.liu
+Other (Favors)	其他（派对小礼品）	家居、厨房用品>活动和派对用品>派对小礼品>其他（派对小礼品）	Home & Kitchen>Event & Party Supplies>Favors>Other (Favors)	巴马	巴马	mars.zhou	#N/A
+Soap Packs	派对肥皂礼品包	家居、厨房用品>活动和派对用品>派对小礼品>派对肥皂礼品包	Home & Kitchen>Event & Party Supplies>Favors>Soap Packs	柏多望	富贵星	rico.lin	bertha.liu
+Drawstring Bag Packs	派对抽绳礼品袋	家居、厨房用品>活动和派对用品>派对小礼品>派对礼品盒和礼品袋>派对抽绳礼品袋	Home & Kitchen>Event & Party Supplies>Favors>Boxes & Bags>Drawstring Bag Packs	本子初	焦伯符	tia.he	arthur.jiao
+Candles	蜡烛	家居、厨房用品>节日装饰品>蜡烛	Home & Kitchen>Seasonal Décor>Candles	陆祁音	富贵星	vanessa.liu	bertha.liu
+Tinsel	金属箔装饰	家居、厨房用品>节日装饰品>金属箔装饰	Home & Kitchen>Seasonal Décor>Tinsel	柏多望	焦伯符	rico.lin	arthur.jiao
+Candleholders	节日烛台	家居、厨房用品>节日装饰品>节日烛台	Home & Kitchen>Seasonal Décor>Candleholders	陆祁音	富贵星	vanessa.liu	bertha.liu
+Collectible Buildings & Accessories	节日用小屋摆设	家居、厨房用品>节日装饰品>节日用小屋摆设	Home & Kitchen>Seasonal Décor>Collectible Buildings & Accessories	床头猫	振哲	Johnny.Yang	ethan.zuo
+Wreaths	花环	家居、厨房用品>节日装饰品>节日花环、花带装饰和垂花饰>花环	Home & Kitchen>Seasonal Décor>Wreaths, Garlands & Swags>Wreaths	栀越桃	振哲	sumi.wang	ethan.zuo
+Swags	垂花饰	家居、厨房用品>节日装饰品>节日花环、花带装饰和垂花饰>垂花饰	Home & Kitchen>Seasonal Décor>Wreaths, Garlands & Swags>Swags	柏多望	富贵星	rico.lin	bertha.liu
+Garlands	花藤装饰	家居、厨房用品>节日装饰品>节日花环、花带装饰和垂花饰>花藤装饰	Home & Kitchen>Seasonal Décor>Wreaths, Garlands & Swags>Garlands	羊禾云	富贵星	zoella.zhang	bertha.liu
+Advent Calendars	节日倒数日历	家居、厨房用品>节日装饰品>圣诞日历	Home & Kitchen>Seasonal Décor>Advent Calendars	羊禾云	富贵星	zoella.zhang	bertha.liu
+Tree Trays & Mats	假日树盘和垫	家居、厨房用品>节日装饰品>假日树盘和垫	Home & Kitchen>Seasonal Décor>Tree Trays & Mats	栀越桃	振哲	sumi.wang	ethan.zuo
+Tree Care & Watering	假日树木养护和浇水	家居、厨房用品>节日装饰品>假日树木养护和浇水	Home & Kitchen>Seasonal Décor>Tree Care & Watering	柏多望	振哲	rico.lin	ethan.zuo
+Wreath Hangers	花环挂钩	家居、厨房用品>节日装饰品>花环挂钩	Home & Kitchen>Seasonal Décor>Wreath Hangers	柏多望	振哲	rico.lin	ethan.zuo
+Bows & Ribbons	蝴蝶结和丝带	家居、厨房用品>节日装饰品>装饰季节性蝴蝶结和丝带	Home & Kitchen>Seasonal Décor>Bows & Ribbons	龙紫妮	焦伯符	jenny.luo	arthur.jiao
+Nutcrackers	胡桃夹子	家居、厨房用品>节日装饰品>胡桃夹子摆设	Home & Kitchen>Seasonal Décor>Nutcrackers	陆祁音	焦伯符	vanessa.liu	arthur.jiao
+Greeting Card Holders	贺卡架	家居、厨房用品>节日装饰品>贺卡架	Home & Kitchen>Seasonal Décor>Greeting Card Holders	陆祁音	焦伯符	vanessa.liu	arthur.jiao
+Snow Globes	雪景球	家居、厨房用品>节日装饰品>雪景球	Home & Kitchen>Seasonal Décor>Snow Globes	柏多望	焦伯符	rico.lin	arthur.jiao
+Holders	节日装饰袜收纳架	家居、厨房用品>节日装饰品>圣诞袜、节日装饰袜>节日装饰袜收纳架	Home & Kitchen>Seasonal Décor>Stockings & Holders>Holders	栀越桃	振哲	sumi.wang	ethan.zuo
+Stockings	圣诞袜、节日装饰袜	家居、厨房用品>节日装饰品>圣诞袜、节日装饰袜>圣诞袜、节日装饰袜	Home & Kitchen>Seasonal Décor>Stockings & Holders>Stockings	柏多望	焦伯符	rico.lin	arthur.jiao
+Tree Toppers	圣诞树树顶装饰件	家居、厨房用品>节日装饰品>圣诞树树顶装饰件	Home & Kitchen>Seasonal Décor>Tree Toppers	栀越桃	振哲	sumi.wang	ethan.zuo
+Tree Skirts	圣诞树裙	家居、厨房用品>节日装饰品>圣诞树裙	Home & Kitchen>Seasonal Décor>Tree Skirts	栀越桃	振哲	sumi.wang	ethan.zuo
+Tree Stands	圣诞树架	家居、厨房用品>节日装饰品>圣诞树架	Home & Kitchen>Seasonal Décor>Tree Stands	栀越桃	振哲	sumi.wang	ethan.zuo
+Artificial Snow	人造雪	家居、厨房用品>节日装饰品>人造雪	Home & Kitchen>Seasonal Décor>Artificial Snow	柏多望	振哲	rico.lin	ethan.zuo
+Artificial Pumpkins	仿真南瓜	家居、厨房用品>节日装饰品>仿真南瓜	Home & Kitchen>Seasonal Décor>Artificial Pumpkins	羊禾云	富贵星	zoella.zhang	bertha.liu
+Kids' Shower Caddies	儿童淋浴储物	家居、厨房用品>儿童家居用品>儿童洗澡用品>儿童浴室配件>儿童淋浴配件>儿童淋浴储物	Home & Kitchen>Kids' Home Store>Kids' Bath>Kids' Bathroom Accessories>Kids' Shower Accessories>Kids' Shower Caddies	本子初	振哲	tia.he	ethan.zuo
+Kids' Bathroom Canisters	儿童洗漱罐	家居、厨房用品>儿童家居用品>儿童洗澡用品>儿童浴室配件>儿童浴室牙刷架和挤牙膏器>儿童洗漱罐	Home & Kitchen>Kids' Home Store>Kids' Bath>Kids' Bathroom Accessories>Kids' Bathroom Holders & Dispensers>Kids' Bathroom Canisters	本子初	振哲	tia.he	ethan.zuo
+Kids' Soap Dishes	儿童皂液盒乳液瓶	家居、厨房用品>儿童家居用品>儿童洗澡用品>儿童浴室配件>儿童浴室牙刷架和挤牙膏器>儿童皂液盒乳液瓶	Home & Kitchen>Kids' Home Store>Kids' Bath>Kids' Bathroom Accessories>Kids' Bathroom Holders & Dispensers>Kids' Soap Dishes	本子初	振哲	tia.he	ethan.zuo
+Kids' Tissue Holders	儿童纸巾盒	家居、厨房用品>儿童家居用品>儿童洗澡用品>儿童浴室配件>儿童浴室牙刷架和挤牙膏器>儿童纸巾盒	Home & Kitchen>Kids' Home Store>Kids' Bath>Kids' Bathroom Accessories>Kids' Bathroom Holders & Dispensers>Kids' Tissue Holders	本子初	振哲	tia.he	ethan.zuo
+Kids' Bathroom Tumblers	儿童浴室水杯	家居、厨房用品>儿童家居用品>儿童洗澡用品>儿童浴室配件>儿童浴室牙刷架和挤牙膏器>儿童浴室水杯	Home & Kitchen>Kids' Home Store>Kids' Bath>Kids' Bathroom Accessories>Kids' Bathroom Holders & Dispensers>Kids' Bathroom Tumblers	本子初	振哲	tia.he	ethan.zuo
+Kids' Non Slip Bathtub Appliques	儿童防滑浴缸贴花	家居、厨房用品>儿童家居用品>儿童洗澡用品>儿童浴室配件>儿童浴缸配件>儿童防滑浴缸贴花	Home & Kitchen>Kids' Home Store>Kids' Bath>Kids' Bathroom Accessories>Kids' Bathtub Accessories>Kids' Non Slip Bathtub Appliques	本子初	振哲	tia.he	ethan.zuo
+Kids' Bathroom Cup Holders	儿童浴室杯座	家居、厨房用品>儿童家居用品>儿童洗澡用品>儿童浴室配件>儿童浴室牙刷架和挤牙膏器>儿童浴室杯座	Home & Kitchen>Kids' Home Store>Kids' Bath>Kids' Bathroom Accessories>Kids' Bathroom Holders & Dispensers>Kids' Bathroom Cup Holders	本子初	振哲	tia.he	ethan.zuo
+Kids' Bathtub Mats	儿童浴缸防滑垫	家居、厨房用品>儿童家居用品>儿童洗澡用品>儿童浴室配件>儿童浴缸配件>儿童浴缸防滑垫	Home & Kitchen>Kids' Home Store>Kids' Bath>Kids' Bathroom Accessories>Kids' Bathtub Accessories>Kids' Bathtub Mats	本子初	振哲	tia.he	ethan.zuo
+Kids' Shower Curtain Decorative Hooks	儿童浴帘装饰挂钩	家居、厨房用品>儿童家居用品>儿童洗澡用品>儿童浴室配件>儿童淋浴配件>儿童浴帘装饰挂钩	Home & Kitchen>Kids' Home Store>Kids' Bath>Kids' Bathroom Accessories>Kids' Shower Accessories>Kids' Shower Curtain Decorative Hooks	本子初	振哲	tia.he	ethan.zuo
+Kids' Bathroom Accessory Sets	儿童浴室配件套装	家居、厨房用品>儿童家居用品>儿童洗澡用品>儿童浴室配件>儿童浴室配件套装	Home & Kitchen>Kids' Home Store>Kids' Bath>Kids' Bathroom Accessories>Kids' Bathroom Accessory Sets	本子初	振哲	tia.he	ethan.zuo
+Kids' Bath Towel Hooks	儿童浴巾挂钩	家居、厨房用品>儿童家居用品>儿童洗澡用品>儿童浴室配件>儿童浴巾挂钩	Home & Kitchen>Kids' Home Store>Kids' Bath>Kids' Bathroom Accessories>Kids' Bath Towel Hooks	本子初	振哲	tia.he	ethan.zuo
+Kids' Bath Towels	儿童浴巾	家居、厨房用品>儿童家居用品>儿童洗澡用品>儿童浴巾	Home & Kitchen>Kids' Home Store>Kids' Bath>Kids' Bath Towels	本子初	振哲	tia.he	ethan.zuo
+Kids' Bath Rugs	儿童浴室地垫	家居、厨房用品>儿童家居用品>儿童洗澡用品>儿童浴室地垫	Home & Kitchen>Kids' Home Store>Kids' Bath>Kids' Bath Rugs	本子初	振哲	tia.he	ethan.zuo
+Kids' Bathroom Waste Bins	儿童浴室垃圾箱	家居、厨房用品>儿童家居用品>儿童洗澡用品>儿童浴室配件>儿童浴室垃圾箱	Home & Kitchen>Kids' Home Store>Kids' Bath>Kids' Bathroom Accessories>Kids' Bathroom Waste Bins	本子初	振哲	tia.he	ethan.zuo
+Kids' Toothbrush Holders	儿童牙刷架	家居、厨房用品>儿童家居用品>儿童洗澡用品>儿童浴室配件>儿童浴室牙刷架和挤牙膏器>儿童牙刷架	Home & Kitchen>Kids' Home Store>Kids' Bath>Kids' Bathroom Accessories>Kids' Bathroom Holders & Dispensers>Kids' Toothbrush Holders	本子初	振哲	tia.he	ethan.zuo
+Kids' Shower Curtains	儿童浴帘	家居、厨房用品>儿童家居用品>儿童洗澡用品>儿童浴室配件>儿童淋浴配件>儿童浴帘	Home & Kitchen>Kids' Home Store>Kids' Bath>Kids' Bathroom Accessories>Kids' Shower Accessories>Kids' Shower Curtains	本子初	振哲	tia.he	ethan.zuo
+Body Pillows	儿童长抱枕	家居、厨房用品>儿童家居用品>儿童房间装饰品>儿童房装饰品>装饰枕头和罩子>儿童长抱枕	Home & Kitchen>Kids' Home Store>Kids' Room Décor>Accents>Decorative Pillows & Covers>Body Pillows	羊禾云	焦伯符	zoella.zhang	arthur.jiao
+Other (Decorative Pillows & Covers)	其他（装饰枕头和罩子）	家居、厨房用品>儿童家居用品>儿童房间装饰品>儿童房装饰品>装饰枕头和罩子>其他（装饰枕头和罩子）	Home & Kitchen>Kids' Home Store>Kids' Room Décor>Accents>Decorative Pillows & Covers>Other (Decorative Pillows & Covers)	羊禾云	焦伯符	zoella.zhang	arthur.jiao
+Throw Pillow Covers	儿童抱枕罩	家居、厨房用品>儿童家居用品>儿童房间装饰品>儿童房装饰品>装饰枕头和罩子>儿童抱枕罩	Home & Kitchen>Kids' Home Store>Kids' Room Décor>Accents>Decorative Pillows & Covers>Throw Pillow Covers	羊禾云	焦伯符	zoella.zhang	arthur.jiao
+Window Stickers	儿童房窗贴	家居、厨房用品>儿童家居用品>儿童房间装饰品>儿童房窗上用品>儿童房窗贴和玻璃贴膜>儿童房窗贴	Home & Kitchen>Kids' Home Store>Kids' Room Décor>Window Treatments>Window Stickers & Films>Window Stickers	柏多望	焦伯符	rico.lin	arthur.jiao
+Floor Pillows & Cushions	儿童地板坐垫、靠垫	家居、厨房用品>儿童家居用品>儿童房间装饰品>儿童房装饰品>装饰枕头和罩子>儿童地板坐垫、靠垫	Home & Kitchen>Kids' Home Store>Kids' Room Décor>Accents>Decorative Pillows & Covers>Floor Pillows & Cushions	栀越桃	焦伯符	sumi.wang	arthur.jiao
+Throw Pillows	儿童抱枕	家居、厨房用品>儿童家居用品>儿童房间装饰品>儿童房装饰品>装饰枕头和罩子>儿童抱枕	Home & Kitchen>Kids' Home Store>Kids' Room Décor>Accents>Decorative Pillows & Covers>Throw Pillows	羊禾云	焦伯符	zoella.zhang	arthur.jiao
+Window Films	儿童房窗户膜	家居、厨房用品>儿童家居用品>儿童房间装饰品>儿童房窗上用品>儿童房窗贴和玻璃贴膜>儿童房窗户膜	Home & Kitchen>Kids' Home Store>Kids' Room Décor>Window Treatments>Window Stickers & Films>Window Films	羊禾云	焦伯符	zoella.zhang	arthur.jiao
+Backpacks	背包	家居、厨房用品>儿童家居用品>儿童房间装饰品>儿童背包和午饭盒>背包	Home & Kitchen>Kids' Home Store>Kids' Room Décor>Backpacks & Lunch Boxes>Backpacks	栀越桃	焦伯符	sumi.wang	arthur.jiao
+Wall Plaques	壁饰板	家居、厨房用品>儿童家居用品>儿童房间装饰品>儿童房壁饰>壁饰板	Home & Kitchen>Kids' Home Store>Kids' Room Décor>Wall Décor>Wall Plaques	羊禾云	振哲	zoella.zhang	ethan.zuo
+Canopies	床顶篷	家居、厨房用品>儿童家居用品>儿童房间装饰品>儿童房装饰品>床顶篷	Home & Kitchen>Kids' Home Store>Kids' Room Décor>Accents>Canopies	羊禾云	焦伯符	zoella.zhang	arthur.jiao
+Door Hangers	门钩	家居、厨房用品>儿童家居用品>儿童房间装饰品>儿童房装饰品>门钩	Home & Kitchen>Kids' Home Store>Kids' Room Décor>Accents>Door Hangers	栀越桃	焦伯符	sumi.wang	arthur.jiao
+Memory Boards	照片墙	家居、厨房用品>儿童家居用品>儿童房间装饰品>儿童房壁饰>照片墙	Home & Kitchen>Kids' Home Store>Kids' Room Décor>Wall Décor>Memory Boards	栀越桃	振哲	sumi.wang	ethan.zuo
+Bookends	儿童房书挡	家居、厨房用品>儿童家居用品>儿童房间装饰品>儿童房装饰品>儿童房书挡	Home & Kitchen>Kids' Home Store>Kids' Room Décor>Accents>Bookends	栀越桃	焦伯符	sumi.wang	arthur.jiao
+Plush Toy Pillows	毛绒玩具枕头	家居、厨房用品>儿童家居用品>儿童房间装饰品>儿童房装饰品>装饰枕头和罩子>毛绒玩具枕头	Home & Kitchen>Kids' Home Store>Kids' Room Décor>Accents>Decorative Pillows & Covers>Plush Toy Pillows	羊禾云	焦伯符	zoella.zhang	arthur.jiao
+Travel Pillows	儿童旅行枕头	家居、厨房用品>儿童家居用品>儿童房间装饰品>儿童房装饰品>装饰枕头和罩子>儿童旅行枕头	Home & Kitchen>Kids' Home Store>Kids' Room Décor>Accents>Decorative Pillows & Covers>Travel Pillows	羊禾云	焦伯符	zoella.zhang	arthur.jiao
+Wastebaskets	儿童杂物篮	家居、厨房用品>儿童家居用品>儿童房间装饰品>儿童房装饰品>儿童杂物篮	Home & Kitchen>Kids' Home Store>Kids' Room Décor>Accents>Wastebaskets	羊禾云	焦伯符	zoella.zhang	arthur.jiao
+Picture Frames	儿童相框	家居、厨房用品>儿童家居用品>儿童房间装饰品>儿童房装饰品>儿童相框	Home & Kitchen>Kids' Home Store>Kids' Room Décor>Accents>Picture Frames	羊禾云	振哲	zoella.zhang	ethan.zuo
+Other (Wall Décor)	其他（儿童房壁饰）	家居、厨房用品>儿童家居用品>儿童房间装饰品>儿童房壁饰>其他（儿童房壁饰）	Home & Kitchen>Kids' Home Store>Kids' Room Décor>Wall Décor>Other (Wall Décor)	栀越桃	振哲	sumi.wang	ethan.zuo
+Pennants & Banners	儿童房横幅	家居、厨房用品>儿童家居用品>儿童房间装饰品>儿童房壁饰>儿童房横幅	Home & Kitchen>Kids' Home Store>Kids' Room Décor>Wall Décor>Pennants & Banners	羊禾云	振哲	zoella.zhang	ethan.zuo
+Growth Charts	身高墙贴	家居、厨房用品>儿童家居用品>儿童房间装饰品>儿童房壁饰>身高墙贴	Home & Kitchen>Kids' Home Store>Kids' Room Décor>Wall Décor>Growth Charts	栀越桃	振哲	sumi.wang	ethan.zuo
+Wall Stickers & Murals	墙贴和壁饰	家居、厨房用品>儿童家居用品>儿童房间装饰品>儿童房壁饰>墙贴和壁饰	Home & Kitchen>Kids' Home Store>Kids' Room Décor>Wall Décor>Wall Stickers & Murals	栀越桃	振哲	sumi.wang	ethan.zuo
+Clocks	儿童房钟表	家居、厨房用品>儿童家居用品>儿童房间装饰品>儿童房装饰品>儿童房钟表	Home & Kitchen>Kids' Home Store>Kids' Room Décor>Accents>Clocks	羊禾云	振哲	zoella.zhang	ethan.zuo
+Drawer Handles & Pulls	儿童家具抽屉把手和拉手	家居、厨房用品>儿童家居用品>儿童房间装饰品>儿童房装饰品>儿童家具抽屉把手和拉手	Home & Kitchen>Kids' Home Store>Kids' Room Décor>Accents>Drawer Handles & Pulls	栀越桃	焦伯符	sumi.wang	arthur.jiao
+Lunch Boxes	儿童午餐盒	家居、厨房用品>儿童家居用品>儿童房间装饰品>儿童背包和午饭盒>儿童午餐盒	Home & Kitchen>Kids' Home Store>Kids' Room Décor>Backpacks & Lunch Boxes>Lunch Boxes	栀越桃	焦伯符	sumi.wang	arthur.jiao
+Curtain Panels	儿童房窗帘片	家居、厨房用品>儿童家居用品>儿童房间装饰品>儿童房窗上用品>儿童房窗帘片	Home & Kitchen>Kids' Home Store>Kids' Room Décor>Window Treatments>Curtain Panels	栀越桃	焦伯符	sumi.wang	arthur.jiao
+Letters & Numbers	字母和数字	家居、厨房用品>儿童家居用品>儿童房间装饰品>儿童房壁饰>字母和数字	Home & Kitchen>Kids' Home Store>Kids' Room Décor>Wall Décor>Letters & Numbers	栀越桃	振哲	sumi.wang	ethan.zuo
+Valances	短帷幔	家居、厨房用品>儿童家居用品>儿童房间装饰品>儿童房窗上用品>短帷幔	Home & Kitchen>Kids' Home Store>Kids' Room Décor>Window Treatments>Valances	羊禾云	焦伯符	zoella.zhang	arthur.jiao
+Other (Kids' Room Décor)	其他（儿童房间装饰品）	家居、厨房用品>儿童家居用品>儿童房间装饰品>其他（儿童房间装饰品）	Home & Kitchen>Kids' Home Store>Kids' Room Décor>Other (Kids' Room Décor)	栀越桃	焦伯符	sumi.wang	arthur.jiao
+Lamps & Lighting	儿童房灯饰照明	家居、厨房用品>儿童家居用品>儿童房间装饰品>儿童房灯饰照明	Home & Kitchen>Kids' Home Store>Kids' Room Décor>Lamps & Lighting	羊禾云	焦伯符	zoella.zhang	arthur.jiao
+Mirrors	儿童和婴儿镜	家居、厨房用品>儿童家居用品>儿童房间装饰品>儿童和婴儿镜	Home & Kitchen>Kids' Home Store>Kids' Room Décor>Mirrors	栀越桃	振哲	sumi.wang	ethan.zuo
+Jewelry Boxes	珠宝首饰盒	家居、厨房用品>儿童家居用品>儿童房间装饰品>珠宝首饰盒	Home & Kitchen>Kids' Home Store>Kids' Room Décor>Jewelry Boxes	栀越桃	焦伯符	sumi.wang	arthur.jiao
+Rugs	儿童脚垫	家居、厨房用品>儿童家居用品>儿童房间装饰品>儿童脚垫	Home & Kitchen>Kids' Home Store>Kids' Room Décor>Rugs	栀越桃	焦伯符	sumi.wang	arthur.jiao
+Lunch Bags	儿童午餐袋	家居、厨房用品>儿童家居用品>儿童房间装饰品>儿童背包和午饭盒>儿童午餐袋	Home & Kitchen>Kids' Home Store>Kids' Room Décor>Backpacks & Lunch Boxes>Lunch Bags	栀越桃	焦伯符	sumi.wang	arthur.jiao
+Other (Window Treatments)	其他（儿童房窗上用品）	家居、厨房用品>儿童家居用品>儿童房间装饰品>儿童房窗上用品>其他（儿童房窗上用品）	Home & Kitchen>Kids' Home Store>Kids' Room Décor>Window Treatments>Other (Window Treatments)	羊禾云	焦伯符	zoella.zhang	arthur.jiao
+Reading & Bed Rest Pillows	儿童阅读枕头	家居、厨房用品>儿童家居用品>儿童房间装饰品>儿童房装饰品>装饰枕头和罩子>儿童阅读枕头	Home & Kitchen>Kids' Home Store>Kids' Room Décor>Accents>Decorative Pillows & Covers>Reading & Bed Rest Pillows	羊禾云	焦伯符	zoella.zhang	arthur.jiao`;
+
+    const data = rawData.split('\n').map(line => {
+        const parts = line.split('\t');
+        return {
+            enName: parts[0],
+            cnName: parts[1],
+            cnPath: parts[2],
+            enPath: parts[3],
+            fullBuyer: parts[4],
+            semiBuyer: parts[5],
+            fullAlias: parts[6],
+            semiAlias: parts[7]
+        };
+    });
+
+    const buyers = new Set();
+    data.forEach(d => {
+        if(d.fullBuyer) buyers.add(d.fullBuyer);
+        if(d.semiBuyer) buyers.add(d.semiBuyer);
+    });
+
+    const grid = document.getElementById('grid');
+    const nav = document.getElementById('filterNav');
+    const statsInfo = document.getElementById('statsInfo');
+
+    function init() {
+        Array.from(buyers).sort().forEach(b => {
+            if(b === "#N/A") return;
+            const count = data.filter(d => d.fullBuyer === b || d.semiBuyer === b).length;
+            const btn = document.createElement('button');
+            btn.className = 'filter-btn';
+            btn.innerHTML = `${b} <span class="count-badge">${count}</span>`;
+            btn.onclick = () => filterBy(b, btn);
+            nav.appendChild(btn);
+        });
+        render(data);
+    }
+
+    function render(list) {
+        grid.innerHTML = '';
+        statsInfo.innerText = `当前显示类目总数：${list.length} 个`;
+        
+        list.forEach(item => {
+            const card = document.createElement('div');
+            card.className = 'card';
+            card.innerHTML = `
+                <div class="leaf-name-box">
+                    <div>
+                        <div class="leaf-cn">${item.cnName}</div>
+                        <div class="leaf-en">${item.enName}</div>
+                    </div>
+                </div>
+                <div class="path-group">
+                    <div class="path-label">中文路径</div>
+                    <span class="path-text-cn">${item.cnPath}</span>
+                </div>
+                <div class="path-group">
+                    <div class="path-label">英文路径</div>
+                    <span class="path-text-en">${item.enPath}</span>
+                </div>
+                <div class="buyer-footer">
+                    <div class="buyer-tag tag-full">
+                        <span class="role-title">全托:</span>${item.fullBuyer}<br>
+                        <small style="opacity:0.8">${item.fullAlias}</small>
+                    </div>
+                    <div class="buyer-tag tag-semi">
+                        <span class="role-title">半托:</span>${item.semiBuyer}<br>
+                        <small style="opacity:0.8">${item.semiAlias}</small>
+                    </div>
+                </div>
+            `;
+            grid.appendChild(card);
+        });
+    }
+
+    function filterBy(name, btn) {
+        document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        
+        if(name === 'all') {
+            render(data);
+        } else {
+            const filtered = data.filter(d => d.fullBuyer === name || d.semiBuyer === name);
+            render(filtered);
+        }
+    }
+
+    init();
+</script>
+
+</body>
+</html>
