@@ -1,0 +1,5 @@
+{
+  "rewrites": [
+    { "source": "/", "destination": "/索引-修改版本.html" }
+  ]
+}
